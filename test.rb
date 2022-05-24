@@ -1,3 +1,3 @@
-x = Array.new(5) { rand 1..6}
+roll = [3, 4, 5, 6, 7]
 
-puts x
+p roll[0, 3]

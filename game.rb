@@ -43,14 +43,35 @@ class Dice
     end
 
     def roll_dice
-        @rolls = Array.new(5) {rand 1..6}
+
+        for i in 0..4 
+            if @keeps[i] == 0 
+                @rolls[i] = rand 1..6
+            end
+        end
+
+    end
+
+    def hand
+        dice = Array.new 5
+
+        for i in 0..4
+            if rolls[i] == 0 
+                dice[i] = @keeps[i]
+            else
+                dice[i] = @rolls[i]
+            end
+        end
+
+        dice
     end
 end
 
 class DiceButton 
-    attr_accessor :button_up 
+    attr_accessor :button_up, :rolls_left
     def initialize 
         @button_up = true 
+        @rolls_left = 3
     end
 
     def draw 
@@ -65,7 +86,7 @@ class DiceButton
 end
 
 class ScoreSheet 
-    attr_accessor :scores 
+    attr_accessor :scores
     def initialize
         @scores = {
             :aces => nil, 
@@ -74,7 +95,6 @@ class ScoreSheet
             :fours => nil, 
             :fives => nil, 
             :sixes => nil, 
-            :bonus => nil, 
             :threeKind => nil, 
             :fourKind => nil, 
             :smStraight => nil, 
@@ -88,6 +108,99 @@ class ScoreSheet
     def draw 
         @sheet = Image.new(SCORESHEET, x: 620, y: 20, width: 360, height: 760)
     end
+
+    def calc_aces(hand)
+        @scores[:aces] = hand.count(1)
+    end
+
+    def calc_twos(hand)
+        @scores[:twos] = hand.count(2) * 2
+    end
+
+    def calc_threes(hand)
+        @scores[:threes] = hand.count(3) * 3
+    end
+
+    def calc_fours(hand)
+        @scores[:fours] = hand.count(4) * 4
+    end
+
+    def calc_fives(hand)
+        @scores[:fives] = hand.count(5) * 5
+    end
+
+    def calc_sixes(hand)
+        @scores[:sixes] = hand.count(6) * 6
+    end
+
+    def calc_3_of_a_kind(hand)
+        hand = hand.sort 
+        if hand[0, 3].uniq.length == 1 || hand[1, 4].uniq.length == 1 || hand[2, 5].uniq.length == 1
+            @scores[:threeKind] = hand.sum
+        else
+            @scores[:threeKind] = 0
+        end
+    end
+
+    def calc_4_of_a_kind(hand)
+        hand = hand.sort
+        if hand[0, 4].uniq.length == 1 || hand[1, 5].uniq.length == 1
+            @scores[:fourKind] = hand.sum 
+        else
+            @scores[:fourKind] = 0
+        end
+    end
+
+    def calc_sm_straight(hand)
+        hand = hand.sort 
+        if hand[0] + 1 == hand[1] and hand[1] + 1 == hand[2] and hand[2] + 1 == hand[3] ||
+            hand[1] + 1 == hand[2] and hand[2] + 1 == hand[3] and hand[3] + 1 == hand[4]
+            @scores[:smStraight] = 30
+        else 
+            @scores[:smStraight] = 0 
+        end 
+    end
+
+    def calc_lg_straight(hand)
+        hand = hand.sort 
+        if hand.uniq.length == 5 and hand[4] - 4 == hand[0]
+            @scores[:lgStraight] = 40 
+        else 
+            @scores[:lgStraight] = 0 
+        end
+    end
+
+    def calc_full_house(hand)
+        hand = hand.sort 
+        if hand[0, 3].uniq.length == 1 and hand[3, 5].uniq.length == 1 ||
+            hand[0, 2].uniq.length == 1 and hand[2, 5].uniq.length == 1
+            @scores[:fullhouse] = 25
+        else 
+            @scores[:fullhouse] = 0
+        end
+    end
+
+    def calc_yahtzee(hand)
+        if hand.uniq.length == 1
+            if @scores[:yahtzee] == nil 
+                @scores[:yahtzee] = 50 
+                return true
+            elsif @scores[:yahtzee] == 0 
+                return false 
+            else
+                @scores[:yahtzee] += 100 
+                return true 
+            end
+        end
+    end
+
+    def calc_chance(hand)
+        @scores[:chance] = hand.sum 
+    end
+
+    # def game_end?
+    #     if not @scores.values.include? nil 
+    #         Text.new("FINISHED", )
 
     
 end
@@ -120,11 +233,12 @@ update do
         Text.new("CHANCE", x: 693, y: 691, font: FONT, size: 30, color: "black"),
         Text.new("TOTAL", x: 700, y: 738, font: FONT, size: 30, color: "black")
     ]
-
+    # scores.game_end?
 end
 
 # Mouse Down Events 
 on :mouse_down do |event|
+    
     # Roll Dice Button 
     if event.x.between?(215, 405) and event.y.between?(500, 572)
         dice_button.button_up = false
@@ -166,41 +280,133 @@ on :mouse_down do |event|
     # Choose category
     elsif event.x.between?(625, 975)
         if event.y.between?(73, 115)
-            puts "aces"
+            if scores.scores[:aces] == nil
+                scores.calc_aces dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(119, 161)
-            puts "twos"
+            if scores.scores[:twos] == nil
+                scores.calc_twos dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(166, 209)
-            puts "threes"
+            if scores.scores[:threes] == nil
+                scores.calc_threes dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(213, 257)
-            puts "fours"
+            if scores.scores[:fours] == nil
+                scores.calc_fours dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+            
         elsif event.y.between?(260, 305)
-            puts "fives"
+            if scores.scores[:fives] == nil
+                scores.calc_fives dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(309, 351)
-            puts "sixes"
+            if scores.scores[:sixes] == nil
+                scores.calc_sixes dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(403, 445)
-            puts "3"
+            if scores.scores[:threeKind] == nil
+                scores.calc_3_of_a_kind dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(449, 492)
-            puts "4"
+            if scores.scores[:fourKind] == nil
+                scores.calc_4_of_a_kind dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(496, 539)
-            puts "full"
+            if scores.scores[:fullhouse] == nil
+                scores.calc_full_house dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(543, 586)
-            puts "small"
+            if scores.scores[:smStraight] == nil
+                scores.calc_sm_straight dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(591, 634)
-            puts "large"
+            if scores.scores[:lgStraight] == nil
+                scores.calc_lg_straight dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(638, 682)
-            puts "yahtzee"
+            if scores.calc_yahtzee
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         elsif event.y.between?(685, 728)
-            puts "chance"
+            if scores.scores[:chance] == nil
+                scores.calc_chance dice.hand
+                dice_button.button_up = true
+                dice_button.rolls_left = 3 
+                dice.rolls = [0, 0, 0, 0, 0]
+                dice.keeps = [0, 0, 0, 0, 0]
+            end
+
         end
     end
 end
 
 # Mouse Up Events
 on :mouse_up do |event| 
+
     # Roll Dice Button 
-    if !dice_button.button_up
+    if !dice_button.button_up && dice_button.rolls_left > 0
         dice.roll_dice 
         dice_button.button_up = true
+        dice_button.rolls_left -= 1
     end
 end
 
