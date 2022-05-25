@@ -86,7 +86,7 @@ class DiceButton
 end
 
 class ScoreSheet 
-    attr_accessor :scores
+    attr_accessor :scores, :game_end
     def initialize
         @scores = {
             :aces => nil, 
@@ -103,10 +103,162 @@ class ScoreSheet
             :yahtzee => nil,  
             :chance => nil
         }
+        @game_end = false
     end
 
     def draw 
-        @sheet = Image.new(SCORESHEET, x: 620, y: 20, width: 360, height: 760)
+        if !@game_end
+            @sheet = Image.new(SCORESHEET, x: 620, y: 20, width: 360, height: 760)
+            scores = [
+                Text.new(
+                    @scores[:aces].to_s,
+                    x: 905, y: 78,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:twos].to_s,
+                    x: 905, y: 125,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:threes].to_s,
+                    x: 905, y: 172,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:fours].to_s,
+                    x: 905, y: 219,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:fives].to_s,
+                    x: 905, y: 267,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:sixes].to_s,
+                    x: 905, y: 314,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    calc_bonus,
+                    x: 905, y: 361,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:threeKind],
+                    x: 905, y: 408,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:fourKind],
+                    x: 905, y: 455,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:fullhouse],
+                    x: 905, y: 502,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:smStraight],
+                    x: 905, y: 549,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:lgStraight],
+                    x: 905, y: 597,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:yahtzee],
+                    x: 905, y: 644,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    @scores[:chance],
+                    x: 905, y: 691,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                ),
+                Text.new(
+                    calc_total,
+                    x: 905, y: 738,
+                    font: FONT, 
+                    size: 30, 
+                    color: "black"
+                )
+            ]
+            if not @scores.values.include? nil 
+                @game_end = true 
+            end 
+        else 
+            Text.new(
+                "Total Score: " + calc_total.to_s, 
+                x: 330, y: 340, 
+                font: FONT, 
+                size: 50,
+                color: "black",
+                z: 2
+            )
+        end
+    end
+
+    def calc_bonus
+        scores = [
+            @scores[:aces], @scores[:twos], @scores[:threes], 
+            @scores[:fours], @scores[:fives], @scores[:sixes]
+        ]
+        total = 0
+        for score in scores 
+            if score != nil 
+                total += score 
+            end
+        end
+
+        if total >= 63
+             return 35
+        else
+            return 0
+        end
+    end
+    
+    def calc_total 
+        total = 0 
+        for score in @scores.values
+            if score != nil 
+                total += score 
+            end 
+        end 
+
+        return total 
     end
 
     def calc_aces(hand)
@@ -152,9 +304,8 @@ class ScoreSheet
     end
 
     def calc_sm_straight(hand)
-        hand = hand.sort 
-        if hand[0] + 1 == hand[1] and hand[1] + 1 == hand[2] and hand[2] + 1 == hand[3] ||
-            hand[1] + 1 == hand[2] and hand[2] + 1 == hand[3] and hand[3] + 1 == hand[4]
+        hand = hand.sort.uniq
+        if hand[0] + 1 == hand[1] and hand[1] + 1 == hand[2] and hand[2] + 1 == hand[3]
             @scores[:smStraight] = 30
         else 
             @scores[:smStraight] = 0 
@@ -172,8 +323,8 @@ class ScoreSheet
 
     def calc_full_house(hand)
         hand = hand.sort 
-        if hand[0, 3].uniq.length == 1 and hand[3, 5].uniq.length == 1 ||
-            hand[0, 2].uniq.length == 1 and hand[2, 5].uniq.length == 1
+        if hand[0, 3].uniq.length == 1 && hand[3, 5].uniq.length == 1 ||
+            hand[0, 2].uniq.length == 1 && hand[2, 5].uniq.length == 1
             @scores[:fullhouse] = 25
         else 
             @scores[:fullhouse] = 0
@@ -191,17 +342,17 @@ class ScoreSheet
                 @scores[:yahtzee] += 100 
                 return true 
             end
+        elsif @scores[:yahtzee] == nil 
+            @scores[:yahtzee] = 0 
+            return true
+        else 
+            return false
         end
     end
 
     def calc_chance(hand)
         @scores[:chance] = hand.sum 
     end
-
-    # def game_end?
-    #     if not @scores.values.include? nil 
-    #         Text.new("FINISHED", )
-
     
 end
 
@@ -211,29 +362,32 @@ scores = ScoreSheet.new
 
 update do 
     clear
-    dice.draw
-    dice_button.draw
-    scores.draw
-    labels = [
-        Text.new("CATEGORIES", x: 670, y: 32, font: FONT, size: 30, color: "black"),
-        Text.new("SCORES", x: 874, y: 32, font: FONT, size: 30, color: "black"),
-        Text.new("ACES", x: 710, y: 78, font: FONT, size: 30, color: "black"),
-        Text.new("TWOS", x: 706, y: 125, font: FONT, size: 30, color: "black"),
-        Text.new("THREES", x: 700, y: 172, font: FONT, size: 30, color: "black"),
-        Text.new("FOURS",x: 706, y: 219, font: FONT, size: 30, color: "black"),
-        Text.new("FIVES", x: 711, y: 267, font: FONT, size: 30, color: "black"),
-        Text.new("SIXES", x: 710, y: 314, font: FONT, size: 30, color: "black"),
-        Text.new("BONUS", x: 704, y: 361, font: FONT, size: 30, color: "black"),
-        Text.new("3 of a KIND", x: 680, y: 408, font: FONT, size: 30, color: "black"),
-        Text.new("4 of a KIND", x: 678, y: 455, font: FONT, size: 30, color: "black"),
-        Text.new("FULL HOUSE", x: 678, y: 502, font: FONT, size: 30, color: "black"),
-        Text.new("SM STRAIGHT", x: 670, y: 549, font: FONT, size: 30, color: "black"),
-        Text.new("LG STRAIGHT", x: 670, y: 597, font: FONT, size: 30, color: "black"),
-        Text.new("YAHTZEE", x: 690, y: 644, font: FONT, size: 30, color: "black"),
-        Text.new("CHANCE", x: 693, y: 691, font: FONT, size: 30, color: "black"),
-        Text.new("TOTAL", x: 700, y: 738, font: FONT, size: 30, color: "black")
-    ]
-    # scores.game_end?
+    if not scores.game_end
+        dice.draw
+        dice_button.draw
+        scores.draw
+        labels = [
+            Text.new("CATEGORIES", x: 670, y: 32, font: FONT, size: 30, color: "black"),
+            Text.new("SCORES", x: 874, y: 32, font: FONT, size: 30, color: "black"),
+            Text.new("ACES", x: 710, y: 78, font: FONT, size: 30, color: "black"),
+            Text.new("TWOS", x: 706, y: 125, font: FONT, size: 30, color: "black"),
+            Text.new("THREES", x: 700, y: 172, font: FONT, size: 30, color: "black"),
+            Text.new("FOURS",x: 706, y: 219, font: FONT, size: 30, color: "black"),
+            Text.new("FIVES", x: 711, y: 267, font: FONT, size: 30, color: "black"),
+            Text.new("SIXES", x: 710, y: 314, font: FONT, size: 30, color: "black"),
+            Text.new("BONUS", x: 704, y: 361, font: FONT, size: 30, color: "black"),
+            Text.new("3 of a KIND", x: 680, y: 408, font: FONT, size: 30, color: "black"),
+            Text.new("4 of a KIND", x: 678, y: 455, font: FONT, size: 30, color: "black"),
+            Text.new("FULL HOUSE", x: 678, y: 502, font: FONT, size: 30, color: "black"),
+            Text.new("SM STRAIGHT", x: 670, y: 549, font: FONT, size: 30, color: "black"),
+            Text.new("LG STRAIGHT", x: 670, y: 597, font: FONT, size: 30, color: "black"),
+            Text.new("YAHTZEE", x: 690, y: 644, font: FONT, size: 30, color: "black"),
+            Text.new("CHANCE", x: 693, y: 691, font: FONT, size: 30, color: "black"),
+            Text.new("TOTAL", x: 700, y: 738, font: FONT, size: 30, color: "black")
+        ]
+    else 
+        scores.draw
+    end
 end
 
 # Mouse Down Events 
@@ -278,7 +432,7 @@ on :mouse_down do |event|
         dice.keeps[4] = 0
 
     # Choose category
-    elsif event.x.between?(625, 975)
+    elsif event.x.between?(625, 975) and dice.rolls.count(0) + dice.keeps.count(0) == 5
         if event.y.between?(73, 115)
             if scores.scores[:aces] == nil
                 scores.calc_aces dice.hand
@@ -379,7 +533,7 @@ on :mouse_down do |event|
             end
 
         elsif event.y.between?(638, 682)
-            if scores.calc_yahtzee
+            if scores.calc_yahtzee dice.hand
                 dice_button.button_up = true
                 dice_button.rolls_left = 3 
                 dice.rolls = [0, 0, 0, 0, 0]
